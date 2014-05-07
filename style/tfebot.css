@@ -1,0 +1,38 @@
+.pause-button {
+    background: #79b16d;
+    border-radius: 3px;
+    padding: 0 20px;
+    text-decoration: none;
+    color: #f9f6f2;
+    height: 40px;
+    line-height: 42px;
+    display: block;
+    text-align: center;
+    float: right;
+    margin-top: 5px;
+    width: 5em;
+}
+
+.pause-button:before {
+    content: 'Start';
+}
+
+.pause-button.stop {
+    background: #c37465;
+}
+
+.pause-button.stop:before {
+    content: 'Stop';
+}
+
+.interval {
+    vertical-align: middle;
+}
+
+label {
+    margin-right: 4px;
+}
+
+#metric-select {
+    margin-right: 10px;
+}
