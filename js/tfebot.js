@@ -761,13 +761,50 @@ State.prototype.getNextStates = function (cells) {
         var pos = available[i];
         var updated_cells = copyCells(cells);
         updated_cells[pos.x][pos.y] = 2;
-        states.push({weight: 0.9, cells: updated_cells});
+        states.push({weight: 0.9, cells: copyCells(updated_cells)});
         updated_cells[pos.x][pos.y] = 4;
         states.push({weight: 0.1, cells: updated_cells});
     }
 
     return states;
 };
+
+function columnGetFreeUnique(column) {
+    var free = [];
+//    var counts = [];
+
+    var seen_null = false;
+
+    for (var i = 0; i < column.length; i++) {
+        if (!column[i]) {
+            if (!seen_null) {
+                free.push({y: i, c: 0});
+            }
+
+            free[free.length - 1].c++;
+
+            seen_null = true;
+        } else {
+            seen_null = false;
+        }
+    }
+
+    return free;
+}
+
+//function getNextStatesSmart(cells) {
+////    var frees = [];
+//    var states = [];
+//
+//    for (var x = 0; x < cells.length; x++) {
+//        var free_ys = columnGetFreeUnique(cells[x]);
+//        for (var i = 0; i < free_ys.length; i++) {
+//            var updated_cells =
+//        }
+//    }
+//
+//
+//}
 
 var keyMap = {
     0: 38,
