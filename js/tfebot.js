@@ -123,12 +123,6 @@ function reverseColumns(cells) {
         for (var y = 0; y < n; y++)
             ts[x][y] = column[n - y - 1];
     }
-//    var ts = copyCells(cells);
-//    for (var i = 0; i < cells.length; i++)
-//        ts[i].reverse();
-//    ts.forEach(function (column) {
-//        column.reverse();
-//    });
 
     return ts;
 }
@@ -317,9 +311,6 @@ function getLegalMoves(cells) {
     }
 
     return moves;
-//    return [0, 1, 2, 3].filter(function (d) {
-//        return this.canMove(cells, d);
-//    }, this);
 }
 
 function columnSum(column) {
@@ -365,16 +356,6 @@ function getColumnMonotonicity(column) {
         } else {
             m_r -= (crunched[k + 1] - crunched[k]) << (column.length - crunched_map[k]);
         }
-
-//        if (crunched[i - 1] <= crunched[i])
-//            m += crunched[i] << (i + column.length - crunched.length);
-//        else
-//            m -= (crunched[i - 1] - crunched[i]) << (2 * (i + column.length - crunched.length));
-//        m += (2 * crunched[i] - crunched[i - 1]) << (i + column.length - crunched.length);
-//        if (crunched[i - 1] <= crunched[i])
-//            m += (crunched[i] - crunched[i - 1]);
-//        else
-//            m /= (2 * crunched[i]);
     }
 
     return [m_l, m_r];
@@ -802,9 +783,7 @@ State.prototype.pickMove = function (cells, metric, depth) {
     var moves = getLegalMoves(cells).map(function (d) {
         return { weight: this.rankMoveRecursive2(cells, d, metric, depth), d: d };
     }, this);
-//    window.console.log(moves);
 
-//    return pickRandomByWeight(moves);
     return pickBest(moves);
 };
 
@@ -880,7 +859,6 @@ function transformCoords(p, d, inverse) {
     switch (d) {
         case 1:
             if (inverse) {
-//                q.x = 3 - q.x;
                 t = q.x;
                 q.x = 3 - q.y;
                 q.y = t;
@@ -1037,7 +1015,6 @@ window.onload = function () {
 
     function startLoop() {
         if (isGameOver()) {
-//            var g = new GameManager(4, KeyboardInputManager, HTMLActuator, LocalStorageManager);
             gm.restart();
         }
 
@@ -1138,17 +1115,9 @@ window.onload = function () {
 
     document.addEventListener('keydown', function (e) {
         if (e.keyCode == 78) {
-//        var start = new Date().getTime();
             var s = new State();
             var d = s.pickMove(s.cells, selectedMetric, recursionDepth);
             makeMove(gm, d);
-//            window.console.log(d);
-//        t_time += new Date().getTime() - start;
-//        t_iter++;
-//        if (t_iter == 10) {
-//            window.console.log(t_time / t_iter);
-//            t_time = t_iter = 0;
-//        }
         }
     });
 
