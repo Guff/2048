@@ -282,14 +282,14 @@ function moveUp(cells) {
  * @param {number} d
  * @returns {MoveResult}
  */
-State.prototype.move = function (cells, d) {
+function move (cells, d) {
     cells = transform(cells, d);
     /** @type {MoveResult} */
     var move_result = moveUp(cells);
     move_result.cells = transform(move_result.cells, d, true);
 //    move_result.d = d;
     return move_result;
-};
+}
 
 /**
  *
@@ -660,11 +660,11 @@ var metrics = {
  * @param {number} n
  * @returns {number}
  */
-State.prototype.rankMoveRecursive = function (cells, d, metric, n) {
+function rankMoveRecursive(cells, d, metric, n) {
 //    if (d === 0)
 //        return -Infinity;
 
-    var move_result = this.move(cells, d);
+    var move_result = move(cells, d);
     var weight = metrics[metric](move_result);
 
 //    if (this.getLegalMoves(move_result.cells).length == 0)
@@ -681,7 +681,7 @@ State.prototype.rankMoveRecursive = function (cells, d, metric, n) {
     }
 
     var updated_cells = move_result.cells;
-    var next_states = this.getNextStates(updated_cells);
+    var next_states = getNextStates(updated_cells);
     for (var i = 0; i < next_states.length; i++) {
         var next_state = next_states[i];
         var moves = getLegalMoves(next_state.cells);
@@ -690,7 +690,7 @@ State.prototype.rankMoveRecursive = function (cells, d, metric, n) {
 
         var max_move_weight = -Infinity;
         for (var k = 0; k < moves.length; k++) {
-            var move_weight = next_state.weight * this.rankMoveRecursive(next_state.cells, moves[k], metric, n - 1);
+            var move_weight = next_state.weight * rankMoveRecursive(next_state.cells, moves[k], metric, n - 1);
 //                var move_weight = this.rankMoveRecursive(next_state.cells, moves[k], metric, n - 1) / moves.length;
             max_move_weight = Math.max(move_weight, max_move_weight);
             x = next_state.x;
@@ -704,13 +704,13 @@ State.prototype.rankMoveRecursive = function (cells, d, metric, n) {
     }
 
     return weight;
-};
+}
 
-State.prototype.rankMoveRecursive2 = function (cells, d, metric, n) {
+function rankMoveRecursive2(cells, d, metric, n) {
 //    if (d === 0)
 //        return -Infinity;
 
-    var move_result = this.move(cells, d);
+    var move_result = move(cells, d);
     var weight = metrics[metric](move_result);
 
     if (n == 0)
@@ -733,7 +733,7 @@ State.prototype.rankMoveRecursive2 = function (cells, d, metric, n) {
         for (var k = 0; k < next_states.length; k++) {
             var next_state = next_states[k];
 
-            move_weight = next_state.weight * this.rankMoveRecursive2(next_state.cells, i, metric, n - 1);
+            move_weight = next_state.weight * rankMoveRecursive2(next_state.cells, i, metric, n - 1);
             for (var j = 0; j < next_state.affected.length; j++) {
                 var p = next_state.affected[j];
 
@@ -755,7 +755,7 @@ State.prototype.rankMoveRecursive2 = function (cells, d, metric, n) {
     }
 
     return weight;
-};
+}
 
 /**
  *
@@ -767,7 +767,7 @@ State.prototype.rankMoveRecursive2 = function (cells, d, metric, n) {
 State.prototype.pickMove = function (cells, metric, depth) {
 //    window.console.log('picking');
     var moves = getLegalMoves(cells).map(function (d) {
-        return { weight: this.rankMoveRecursive2(cells, d, metric, depth), d: d };
+        return { weight: rankMoveRecursive2(cells, d, metric, depth), d: d };
     }, this);
 
     return pickBest(moves);
@@ -799,7 +799,7 @@ function shuffle(xs, r) {
     return xs.slice(Math.floor(xs.length * (1 - r)));
 }
 
-State.prototype.getNextStates = function (cells) {
+function getNextStates(cells) {
     var available = this.getAvailableCells(cells);
 //    available = shuffle(available, 0.333);
 //    available = available.slice(0, Math.ceil(available.length / 4));
@@ -1185,4 +1185,4 @@ function profileTest(n, metric, r, premade_cells) {
 
 //window.profileTest = profileTest;
 
-//profileTest(1, 'monotonicity', 3, [[0,0,0,0],[0,0,0,0],[0,2,2,0],[0,0,0,0]]);
+profileTest(4, 'monotonicity', 3, [[0,0,0,0],[0,0,0,0],[0,2,2,0],[0,0,0,0]]);
