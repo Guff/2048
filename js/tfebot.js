@@ -241,9 +241,12 @@ function canMoveUp(cells) {
         var cell, y;
         for (y = 0; y < column.length; y++) {
             cell = column[y];
-            if (cell === 0)
-                seen_empty = true; else if (seen_empty)
+            if (cell === 0) {
+
+                seen_empty = true;
+            } else if (seen_empty) {
                 return true;
+            }
         }
 
         var column_crunched = crunch(cells[x]);
@@ -684,6 +687,14 @@ State.prototype.rankMoveRecursive = function (cells, d, metric, n) {
     if (n == 0)
         return weight;
 
+    var max_move_weights = [];
+    for (var x = 0; x < cells.length; x++) {
+        max_move_weights[x] = [];
+        for (var y = 0; y < cells[x].length; y++) {
+            max_move_weights[x][y] = {2: -Infinity, 4: -Infinity};
+        }
+    }
+
     var updated_cells = move_result.cells;
     var next_states = this.getNextStates(updated_cells);
     for (var i = 0; i < next_states.length; i++) {
@@ -694,15 +705,86 @@ State.prototype.rankMoveRecursive = function (cells, d, metric, n) {
 
         var max_move_weight = -Infinity;
         for (var k = 0; k < moves.length; k++) {
-//            if (moves[k] != 0) {
-            var move_weight = this.rankMoveRecursive(next_state.cells, moves[k], metric, n - 1);
+            var move_weight = next_state.weight * this.rankMoveRecursive(next_state.cells, moves[k], metric, n - 1);
 //                var move_weight = this.rankMoveRecursive(next_state.cells, moves[k], metric, n - 1) / moves.length;
             max_move_weight = Math.max(move_weight, max_move_weight);
+            x = next_state.x;
+            y = next_state.y;
+            max_move_weights[x][y][next_state.v] = Math.max(max_move_weights[x][y][next_state.v], move_weight);
+//            if (next_state.cells[1][0] == 2)
+//                window.console.log(move_weight)
+//            if (x == 1 && y == 3 && n == 1 && next_state.v == 2)
+//                window.console.log(next_state, moves[k], move_weight);
         }
 
-        weight += next_state.weight * max_move_weight;
+        weight += max_move_weight;
 
 //        weight += next_state.weight * sub_weight / next_states.length;
+    }
+//    if (n == 1)
+//        window.console.log(max_move_weights);
+
+    return weight;
+};
+
+State.prototype.rankMoveRecursive2 = function (cells, d, metric, n) {
+//    if (d === 0)
+//        return -Infinity;
+
+    var move_result = this.move(cells, d);
+    var weight = metrics[metric](move_result);
+
+//    if (this.getLegalMoves(move_result.cells).length == 0)
+
+    if (n == 0)
+        return weight;
+
+    var updated_cells = move_result.cells;
+
+//    var moves = getLegalMoves(updated_cells);
+    var max_move_weights = [];
+    for (var x = 0; x < cells.length; x++) {
+        max_move_weights[x] = [];
+        for (var y = 0; y < cells[x].length; y++) {
+            max_move_weights[x][y] = {2: -Infinity, 4: -Infinity};
+        }
+    }
+
+    for (var i = 0; i < 4; i++) {
+        var next_states = getNextStatesSmart(updated_cells, i);
+        var move_weight;
+        for (var k = 0; k < next_states.length; k++) {
+            var next_state = next_states[k];
+
+//            if (!canMove(next_state.cells, i))
+//                continue;
+
+            move_weight = next_state.weight * this.rankMoveRecursive2(next_state.cells, i, metric, n - 1);
+            for (var j = 0; j < next_state.affected.length; j++) {
+                var p = next_state.affected[j];
+//                if (p.x == 1 && p.y == 3 && n == 1 && next_state.v == 2)
+//                    window.console.log(next_state, i, move_weight);
+
+                var v = next_state.v;
+//                window.console.log(next_state);
+                max_move_weights[p.x][p.y][v] = Math.max(max_move_weights[p.x][p.y][v], move_weight);
+            }
+        }
+
+//        max_move_weight = Math.max(move_weight, max_move_weight);
+    }
+
+//    if (n == 1)
+//        console.log(max_move_weights);
+
+    for (x = 0; x < max_move_weights.length; x++) {
+        for (y = 0; y < max_move_weights[x].length; y++) {
+            var weight_2 = max_move_weights[x][y][2], weight_4 = max_move_weights[x][y][4];
+            if (weight_2 != -Infinity)
+                weight += weight_2;
+            if (weight_4 != -Infinity)
+                weight += weight_4;
+        }
     }
 
     return weight;
@@ -718,7 +800,7 @@ State.prototype.rankMoveRecursive = function (cells, d, metric, n) {
 State.prototype.pickMove = function (cells, metric, depth) {
 //    window.console.log('picking');
     var moves = getLegalMoves(cells).map(function (d) {
-        return { weight: this.rankMoveRecursive(cells, d, metric, depth), d: d };
+        return { weight: this.rankMoveRecursive2(cells, d, metric, depth), d: d };
     }, this);
 //    window.console.log(moves);
 
@@ -761,9 +843,9 @@ State.prototype.getNextStates = function (cells) {
         var pos = available[i];
         var updated_cells = copyCells(cells);
         updated_cells[pos.x][pos.y] = 2;
-        states.push({weight: 0.9, cells: copyCells(updated_cells)});
+        states.push({weight: 0.9, cells: copyCells(updated_cells), x: pos.x, y: pos.y, v: 2});
         updated_cells[pos.x][pos.y] = 4;
-        states.push({weight: 0.1, cells: updated_cells});
+        states.push({weight: 0.1, cells: updated_cells, x: pos.x, y: pos.y, v: 4});
     }
 
     return states;
@@ -792,19 +874,82 @@ function columnGetFreeUnique(column) {
     return free;
 }
 
-//function getNextStatesSmart(cells) {
-////    var frees = [];
-//    var states = [];
-//
-//    for (var x = 0; x < cells.length; x++) {
-//        var free_ys = columnGetFreeUnique(cells[x]);
-//        for (var i = 0; i < free_ys.length; i++) {
-//            var updated_cells =
-//        }
-//    }
-//
-//
-//}
+function transformCoords(p, d, inverse) {
+    var t;
+    var q = {x: p.x, y: p.y};
+    switch (d) {
+        case 1:
+            if (inverse) {
+//                q.x = 3 - q.x;
+                t = q.x;
+                q.x = 3 - q.y;
+                q.y = t;
+            } else {
+                t = 3 - q.x;
+                q.x = q.y;
+                q.y = t;
+
+            }
+            break;
+        case 2:
+            q.y = 3 - q.y;
+            break;
+        case 3:
+            t = q.x;
+            q.x = q.y;
+            q.y = t;
+            break;
+        default:
+            break;
+    }
+
+    return q;
+}
+
+function getNextStatesSmart(orig_cells, d) {
+    var cells = transform(orig_cells, d);
+//    var frees = [];
+    var states = [];
+
+    for (var x = 0; x < cells.length; x++) {
+        var free_ys = columnGetFreeUnique(cells[x]);
+        for (var i = 0; i < free_ys.length; i++) {
+            var updated_cells = copyCells(cells);
+            var y = free_ys[i].y, c = free_ys[i].c;
+            var affected_2 = [], affected_4 = [];
+
+            for (var k = 0; k < c; k++) {
+                var p = {x: x, y: y + k};
+                var p_t = transformCoords(p, d, true);
+
+                updated_cells[p.x][p.y] = 2;
+
+                if (canMoveUp(updated_cells))
+                    affected_2.push(p_t);
+
+                updated_cells[p.x][p.y] = 4;
+
+                if (canMoveUp(updated_cells))
+                    affected_4.push(p_t);
+
+                updated_cells[p.x][p.y] = 0;
+            }
+
+            var transformed = transform(updated_cells, d, true);
+            var xy = transformCoords({x: x, y: y}, d, true);
+
+
+            transformed[xy.x][xy.y] = 2;
+            states.push({weight: 0.9, cells: copyCells(transformed), affected: affected_2, v: 2});
+//            states.push({weight: 0.9, cells: transform(updated_cells, d, true), affected: affected_2, v: 2});
+            transformed[xy.x][xy.y] = 4;
+            states.push({weight: 0.1, cells: transformed, affected: affected_4, v: 4});
+        }
+    }
+
+
+    return states;
+}
 
 var keyMap = {
     0: 38,
@@ -1061,13 +1206,13 @@ window.generateNewGrid = function () {
     return grid;
 };
 
-function profileTest(n, metric) {
+function profileTest(n, metric, r) {
     window.console.profile();
 
     for (var i = 0; i < n; i++) {
         var cells = window.generateNewGrid();
         var s = new State(cells);
-        s.pickMove(s.cells, metric, 2);
+        s.pickMove(s.cells, metric, r);
     }
 
     window.console.profileEnd();
@@ -1075,4 +1220,4 @@ function profileTest(n, metric) {
 
 //window.profileTest = profileTest;
 
-//profileTest(1);
+//profileTest(1, 'monotonicity', 3);
