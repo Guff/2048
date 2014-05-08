@@ -222,6 +222,28 @@ State.prototype.loadState = function () {
     });
 };
 
+function columnCanMoveUp(column) {
+    var seen_empty = false;
+    var cell, y;
+    for (y = 0; y < column.length; y++) {
+        cell = column[y];
+        if (cell === 0) {
+            seen_empty = true;
+        } else if (seen_empty) {
+            return true;
+        }
+    }
+
+    var column_crunched = crunch(column);
+    for (y = 0; y < column_crunched.length; y++) {
+        cell = column_crunched[y];
+        if (cell && cell === column_crunched[y + 1])
+            return true;
+    }
+
+    return false;
+}
+
 /**
  *
  * @param {Cells} cells
@@ -230,25 +252,8 @@ State.prototype.loadState = function () {
 function canMoveUp(cells) {
     // check for gaps as well as consecutive identical cells
     for (var x = 0; x < cells.length; x++) {
-        var seen_empty = false;
-        var column = cells[x];
-        var cell, y;
-        for (y = 0; y < column.length; y++) {
-            cell = column[y];
-            if (cell === 0) {
-
-                seen_empty = true;
-            } else if (seen_empty) {
-                return true;
-            }
-        }
-
-        var column_crunched = crunch(cells[x]);
-        for (y = 0; y < column_crunched.length; y++) {
-            cell = column_crunched[y];
-            if (cell && cell === column_crunched[y + 1])
-                return true;
-        }
+        if (columnCanMoveUp(cells[x]))
+            return true;
     }
 
     return false;
@@ -341,7 +346,6 @@ function getColumnMonotonicity(column) {
         }
         crunched_map[i] = k;
     }
-//    var m = columnSum(crunched) << (column.length - crunched.length);
     for (i = 1; i < crunched.length; i++) {
         if (crunched[i] >= crunched[i - 1]) {
             m_l += crunched[i] << (crunched_map[i]);
@@ -692,18 +696,12 @@ State.prototype.rankMoveRecursive = function (cells, d, metric, n) {
             x = next_state.x;
             y = next_state.y;
             max_move_weights[x][y][next_state.v] = Math.max(max_move_weights[x][y][next_state.v], move_weight);
-//            if (next_state.cells[1][0] == 2)
-//                window.console.log(move_weight)
-//            if (x == 1 && y == 3 && n == 1 && next_state.v == 2)
-//                window.console.log(next_state, moves[k], move_weight);
         }
 
         weight += max_move_weight;
 
 //        weight += next_state.weight * sub_weight / next_states.length;
     }
-//    if (n == 1)
-//        window.console.log(max_move_weights);
 
     return weight;
 };
@@ -714,8 +712,6 @@ State.prototype.rankMoveRecursive2 = function (cells, d, metric, n) {
 
     var move_result = this.move(cells, d);
     var weight = metrics[metric](move_result);
-
-//    if (this.getLegalMoves(move_result.cells).length == 0)
 
     if (n == 0)
         return weight;
@@ -737,26 +733,16 @@ State.prototype.rankMoveRecursive2 = function (cells, d, metric, n) {
         for (var k = 0; k < next_states.length; k++) {
             var next_state = next_states[k];
 
-//            if (!canMove(next_state.cells, i))
-//                continue;
-
             move_weight = next_state.weight * this.rankMoveRecursive2(next_state.cells, i, metric, n - 1);
             for (var j = 0; j < next_state.affected.length; j++) {
                 var p = next_state.affected[j];
-//                if (p.x == 1 && p.y == 3 && n == 1 && next_state.v == 2)
-//                    window.console.log(next_state, i, move_weight);
 
                 var v = next_state.v;
-//                window.console.log(next_state);
                 max_move_weights[p.x][p.y][v] = Math.max(max_move_weights[p.x][p.y][v], move_weight);
             }
         }
 
-//        max_move_weight = Math.max(move_weight, max_move_weight);
     }
-
-//    if (n == 1)
-//        console.log(max_move_weights);
 
     for (x = 0; x < max_move_weights.length; x++) {
         for (y = 0; y < max_move_weights[x].length; y++) {
@@ -891,6 +877,18 @@ function getNextStatesSmart(orig_cells, d) {
 
     for (var x = 0; x < cells.length; x++) {
         var free_ys = columnGetFreeUnique(cells[x]);
+
+        var other_columns_can_move = false;
+        for (var j = 0; j < cells.length; j++) {
+            if (j == x)
+                continue;
+
+            if (columnCanMoveUp(cells[j])) {
+                other_columns_can_move = true;
+                break;
+            }
+        }
+
         for (var i = 0; i < free_ys.length; i++) {
             var updated_cells = copyCells(cells);
             var y = free_ys[i].y, c = free_ys[i].c;
@@ -902,12 +900,12 @@ function getNextStatesSmart(orig_cells, d) {
 
                 updated_cells[p.x][p.y] = 2;
 
-                if (canMoveUp(updated_cells))
+                if (other_columns_can_move || columnCanMoveUp(updated_cells[x]))
                     affected_2.push(p_t);
 
                 updated_cells[p.x][p.y] = 4;
 
-                if (canMoveUp(updated_cells))
+                if (other_columns_can_move || columnCanMoveUp(updated_cells[x]))
                     affected_4.push(p_t);
 
                 updated_cells[p.x][p.y] = 0;
@@ -1011,7 +1009,6 @@ window.onload = function () {
         return (s.grid === null || typeof s.cells === 'undefined');
     }
 
-//    function ()
 
     function startLoop() {
         if (isGameOver()) {
@@ -1025,8 +1022,6 @@ window.onload = function () {
 
     function stopLoop() {
         pauseButton.classList.remove('stop');
-//        window.clearInterval(intervalId);
-//        intervalId = null;
     }
 
     function doMove() {
@@ -1175,11 +1170,12 @@ window.generateNewGrid = function () {
     return grid;
 };
 
-function profileTest(n, metric, r) {
+function profileTest(n, metric, r, premade_cells) {
     window.console.profile();
 
     for (var i = 0; i < n; i++) {
-        var cells = window.generateNewGrid();
+
+        var cells = premade_cells ? premade_cells : window.generateNewGrid();
         var s = new State(cells);
         s.pickMove(s.cells, metric, r);
     }
@@ -1189,4 +1185,4 @@ function profileTest(n, metric, r) {
 
 //window.profileTest = profileTest;
 
-//profileTest(1, 'monotonicity', 3);
+//profileTest(1, 'monotonicity', 3, [[0,0,0,0],[0,0,0,0],[0,2,2,0],[0,0,0,0]]);
