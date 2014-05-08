@@ -1185,4 +1185,4 @@ function profileTest(n, metric, r, premade_cells) {
 
 //window.profileTest = profileTest;
 
-profileTest(4, 'monotonicity', 3, [[0,0,0,0],[0,0,0,0],[0,2,2,0],[0,0,0,0]]);
+//profileTest(4, 'monotonicity', 3, [[0,0,0,0],[0,0,0,0],[0,2,2,0],[0,0,0,0]]);
